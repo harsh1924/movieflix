@@ -5,10 +5,13 @@ import { images } from "@/constants/images";
 import { fetchMovies } from "@/services/api";
 import useFetch from "@/services/useFetch";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { ActivityIndicator, FlatList, Image, ScrollView, Text, View } from "react-native";
 
 export default function Index() {
   const router = useRouter();
+  const [searchValue, setSearchValue] = useState("");
+  
   const {
     data: movies,
     loading: moviesLoading,
@@ -44,6 +47,8 @@ export default function Index() {
             <View className="flex-1 mt-5">
               {/* Search Bar */}
               <SearchBar
+                value={searchValue}
+                onChangeText={setSearchValue}
                 onPress={() => router.push("/search")}
                 placeholder="Search for movies, TV shows, actors..."
               />
