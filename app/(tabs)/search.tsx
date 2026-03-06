@@ -1,5 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react'
-import { useRouter } from 'expo-router'
 import useFetch from '@/services/useFetch'
 import { images } from '@/constants/images'
 import { fetchMovies } from '@/services/api'
