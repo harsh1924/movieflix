@@ -2,8 +2,8 @@ import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
 import { fetchMovieDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
-import { useLocalSearchParams } from 'expo-router'
-import React, { useEffect, useMemo, useState } from 'react'
+import { router, useLocalSearchParams } from 'expo-router'
+import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 const MovieDetails = () => {
@@ -38,11 +38,6 @@ const MovieDetails = () => {
 
     loadMovie()
   }, [id])
-
-  const genres = useMemo(() => {
-    if (!movie?.genres?.length) return 'N/A'
-    return movie.genres.map((genre) => genre.name).join(', ')
-  }, [movie?.genres])
 
   const handleToggleSave = async () => {
     if (!movie) return
@@ -84,15 +79,15 @@ const MovieDetails = () => {
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
 
-      <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 80 }}>
         <Image
           source={{
             uri: movie.poster_path
               ? `https://image.tmdb.org/t/p/w500/${movie.poster_path}`
               : 'https://placeholder.co/600x400/1a1a1a/ffffff.png',
           }}
-          className='w-full h-[420px] rounded-2xl mt-16'
-          resizeMode='cover'
+          className='w-full h-[450px] rounded-2xl mt-16'
+          resizeMode='stretch'
         />
 
         <Text className='text-white text-2xl font-bold mt-5'>{movie.title}</Text>
@@ -100,7 +95,7 @@ const MovieDetails = () => {
           {new Date(movie.release_date).getFullYear()} • {movie.runtime ? `${movie.runtime} min` : 'N/A'}
         </Text>
 
-        <View className='flex-row items-center mt-4'>
+        <View className='flex-row items-center mt-4 text-light-200 bg-dark-100 p-2f rounded-lg self-start'>
           <Image source={icons.star} className='size-5 mr-2' />
           <Text className='text-white font-bold text-base'>{movie.vote_average.toFixed(1)}</Text>
           <Text className='text-light-200 ml-2'>({movie.vote_count} votes)</Text>
@@ -119,15 +114,100 @@ const MovieDetails = () => {
           <Text className='text-light-200 mt-2 leading-6'>{movie.overview || 'No overview available.'}</Text>
         </View>
 
+        {/* Genre */}
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Genres</Text>
-          <Text className='text-light-200 mt-2'>{genres}</Text>
+          <View className="flex-row flex-wrap mt-2">
+            {movie.genres?.length ? (
+              movie.genres.map((genre) => (
+                <Text
+                  key={genre.id}
+                  className="text-light-200 bg-dark-100 px-3 py-1 mr-2 mb-2 rounded-lg"
+                >
+                  {genre.name}
+                </Text>
+              ))
+            ) : (
+              <Text className="text-light-200">N/A</Text>
+            )}
+          </View>
         </View>
 
-        <View className='mt-6'>
-          <Text className='text-white text-lg font-semibold'>Language</Text>
-          <Text className='text-light-200 mt-2 uppercase'>{movie.original_language}</Text>
+        {/* Budget and Revenue */}
+        <View className='mt-6 flex-row'>
+          <View className='flex-1'>
+            <Text className='text-white text-lg font-semibold'>Budget</Text>
+            <Text className='text-light-200 mt-2'>
+              ${(movie.budget / 1000000).toFixed(0)}M
+            </Text>
+          </View>
+
+          <View className='flex-1'>
+            <Text className='text-white text-lg font-semibold'>Revenue</Text>
+            <Text className='text-light-200 mt-2'>
+              ${(movie.revenue / 1000000).toFixed(0)}M
+            </Text>
+          </View>
         </View>
+
+        {/* Original Language and Popularity */}
+        <View className='mt-6 flex-row'>
+          <View className='flex-1'>
+            <Text className='text-white text-lg font-semibold'>Language</Text>
+            <Text className='text-light-200 mt-2 uppercase'>
+              {movie.original_language}
+            </Text>
+          </View>
+
+          <View className='flex-1'>
+            <Text className='text-white text-lg font-semibold'>Popularity</Text>
+            <Text className='text-light-200 mt-2'>
+              {movie.popularity.toFixed(0)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Production Companies */}
+        <View className='mt-6'>
+          <Text className='text-white text-lg font-semibold'>Production Companies</Text>
+          {movie.production_companies?.length ? (
+            movie.production_companies.map((company) => (
+              <Text key={company.id} className='text-light-200 mt-2'>
+                {company.name}
+              </Text>
+            ))
+          ) : (
+            <Text className='text-light-200 mt-2'>No production companies available.</Text>
+          )}
+        </View>
+
+        {/* Tagline */}
+        <View className='mt-6'>
+          <Text className='text-white text-lg font-semibold'>Tagline</Text>
+          <Text className='text-light-200 mt-2 leading-6'>{movie.tagline || 'No overview available.'}</Text>
+        </View>
+
+        {/* Production Countries */}
+        <View className='mt-6'>
+          <Text className='text-white text-lg font-semibold'>Production Countries</Text>
+          {movie.production_countries?.length ? (
+            movie.production_countries.map((country) => (
+              <Text key={country.iso_3166_1} className='text-light-200 mt-2'>
+                {country.name}
+              </Text>
+            ))
+          ) : (
+            <Text className='text-light-200 mt-2'>No production countries available.</Text>
+          )}
+        </View>
+
+        <TouchableOpacity className='absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50' onPress={() => router.back()}>
+          <Image source={icons.arrow} className='size-5 mr-1 mt-0.5 rotate-180' tintColor="#fff" />
+          <Text className="text-white font-semibold text-base">
+            Go Back
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </View>
   )
