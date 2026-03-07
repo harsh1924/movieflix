@@ -9,8 +9,8 @@ import { icons } from '@/constants/icons'
 interface Props {
     onPress?: () => void;
     placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
+    value?: string;
+    onChangeText?: (text: string) => void;
     autoFocus?: boolean;
 }
 

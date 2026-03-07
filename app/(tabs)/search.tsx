@@ -7,6 +7,7 @@ import MovieCard from '@/components/MovieCard'
 import { View, Text, Image, FlatList, ActivityIndicator } from 'react-native'
 import { icons } from '@/constants/icons'
 import SearchBar from '@/components/SearchBar'
+import { upateSearchCount } from '@/services/appwrite'
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -24,13 +25,19 @@ const Search = () => {
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
       if (searchQuery.trim()) {
-        await loadMovies()
+        await loadMovies();
       } else reset();
     }, 500)
 
     return () => clearTimeout(timeoutId);
 
   }, [searchQuery])
+
+  useEffect(() => {
+    if (movies && movies.length > 0 && searchQuery.trim()) {
+      upateSearchCount(searchQuery, movies[0]);
+    }
+  }, [movies])
 
   return (
     <View className='flex-1 bg-primary'>
