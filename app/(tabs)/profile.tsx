@@ -1,10 +1,104 @@
-import { Text, View } from 'react-native'
-import React from 'react'
+import { icons } from '@/constants/icons'
+import { images } from '@/constants/images'
+import { getSavedMovies } from '@/services/savedMovies'
+import { useFocusEffect, useRouter } from 'expo-router'
+import React, { useCallback, useMemo, useState } from 'react'
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 const Profile = () => {
+  const router = useRouter()
+
+  const [savedMovies, setSavedMovies] = useState<SavedMovie[]>([])
+
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        const saved = await getSavedMovies()
+        setSavedMovies(saved)
+      }
+
+      load()
+    }, [])
+  )
+
+  const averageRating = useMemo(() => {
+    if (!savedMovies.length) return '0.0'
+
+    const total = savedMovies.reduce((sum, movie) => sum + movie.vote_average, 0)
+    return (total / savedMovies.length).toFixed(1)
+  }, [savedMovies])
+
+  const latestSavedYear = useMemo(() => {
+    if (!savedMovies.length) return 'N/A'
+
+    return savedMovies
+      .map((movie) => Number(new Date(movie.release_date).getFullYear()))
+      .filter((year) => !Number.isNaN(year))
+      .sort((a, b) => b - a)[0]
+      ?.toString() ?? 'N/A'
+  }, [savedMovies])
+
   return (
-    <View>
-      <Text>Profile</Text>
+    <View className='flex-1 bg-primary'>
+      <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
+
+      <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 120 }}>
+        <View className='mt-20 items-center'>
+          <View className='size-24 rounded-full bg-light-100/20 items-center justify-center'>
+            <Image source={icons.person} className='size-12' tintColor='#fff' />
+          </View>
+
+          <Text className='text-white text-2xl font-bold mt-4'>Movie Explorer</Text>
+          <Text className='text-light-200 mt-1'>Keep your next watchlist ready</Text>
+        </View>
+
+        <View className='flex-row gap-3 mt-8'>
+          <View className='flex-1 bg-dark-200/70 border border-white/10 rounded-2xl p-4'>
+            <Text className='text-light-200 text-xs uppercase'>Saved Movies</Text>
+            <Text className='text-white text-2xl font-bold mt-2'>{savedMovies.length}</Text>
+          </View>
+
+          <View className='flex-1 bg-dark-200/70 border border-white/10 rounded-2xl p-4'>
+            <Text className='text-light-200 text-xs uppercase'>Avg Rating</Text>
+            <View className='flex-row items-center mt-2'>
+              <Image source={icons.star} className='size-4 mr-1' />
+              <Text className='text-white text-2xl font-bold'>{averageRating}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className='mt-6 bg-dark-200/70 border border-white/10 rounded-2xl p-5'>
+          <Text className='text-white text-lg font-semibold'>Watch Goals</Text>
+
+          <View className='mt-4 flex-row items-center justify-between'>
+            <Text className='text-light-200'>Recent release in saved</Text>
+            <Text className='text-white font-semibold'>{latestSavedYear}</Text>
+          </View>
+
+          <View className='mt-3 flex-row items-center justify-between'>
+            <Text className='text-light-200'>Next milestone</Text>
+            <Text className='text-white font-semibold'>{Math.max(savedMovies.length, 0) + (10 - (savedMovies.length % 10 || 10))} movies</Text>
+          </View>
+        </View>
+
+        <View className='mt-6'>
+          <TouchableOpacity
+            className='bg-accent rounded-xl py-4 mb-3'
+            onPress={() => router.push('/search')}
+            activeOpacity={0.85}
+          >
+            <Text className='text-black text-center font-bold text-base'>Discover New Movies</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className='bg-white/10 border border-white/15 rounded-xl py-4'
+            onPress={() => router.push('/saved')}
+            activeOpacity={0.85}
+          >
+            <Text className='text-white text-center font-semibold text-base'>Open Saved Collection</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   )
 }

@@ -8,7 +8,7 @@ const TrendingCard = ({ movie: { movie_id, title, poster_url }, index }: Trendin
     if (!title) return null;
 
     return (
-        <Link href={`/movie/${movie_id}` as any} asChild>
+        <Link href={`/movies/${movie_id}` as any} asChild>
             <TouchableOpacity className='w-32 relative'>
                 <Image
                     source={{ uri: poster_url }}

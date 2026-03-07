@@ -27,3 +27,23 @@ export const fetchMovies = async ({ query }: { query: string }) => {
         throw error;
     }
 };
+
+export const fetchMovieDetails = async (id: string | number): Promise<MovieDetails> => {
+    try {
+        const endpoint = `${TMDB_CONFIG.BASE_URL}/movie/${id}`;
+
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: TMDB_CONFIG.headers,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+
+        return (await response.json()) as MovieDetails;
+    } catch (error) {
+        console.error('Error fetching movie details:', error);
+        throw error;
+    }
+};
