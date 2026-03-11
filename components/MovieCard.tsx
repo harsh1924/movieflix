@@ -1,4 +1,5 @@
 import { icons } from '@/constants/icons'
+import { useAuth } from '@/context/AuthContext'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
 import { Link } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -6,6 +7,7 @@ import { Image, Text, TouchableOpacity, View } from 'react-native'
 
 const MovieCard = ({ title, id, poster_path, vote_average, release_date }: SavedMovie) => {
     const [saved, setSaved] = useState(false)
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         let mounted = true
@@ -68,13 +70,15 @@ const MovieCard = ({ title, id, poster_path, vote_average, release_date }: Saved
                 </TouchableOpacity>
             </Link>
 
-            <TouchableOpacity
-                onPress={handleToggleSave}
-                className='absolute top-2 right-2 rounded-full px-2 py-1 bg-black/60'
-                hitSlop={8}
-            >
-                <Text className='text-xs font-bold text-white'>{saved ? 'Saved' : 'Save'}</Text>
-            </TouchableOpacity>
+            {isAuthenticated && (
+                <TouchableOpacity
+                    onPress={handleToggleSave}
+                    className='absolute top-2 right-2 rounded-full px-2 py-1 bg-black/60'
+                    hitSlop={8}
+                >
+                    <Text className='text-xs font-bold text-white'>{saved ? 'Saved' : 'Save'}</Text>
+                </TouchableOpacity>
+            )}
         </View>
     )
 }

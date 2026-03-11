@@ -1,18 +1,25 @@
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
-import { fetchMovieDetails } from '@/services/api'
+import { fetchMovieDetails, fetchMovieTrailer } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
+import YoutubePlayer from "react-native-youtube-iframe";
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { useAuth } from '@/context/AuthContext'
+import LoginRequired from '@/components/LoginRequired'
 
 const MovieDetails = () => {
+  const { isAuthenticated } = useAuth();
+
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const [movie, setMovie] = useState<MovieDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [trailer, setTrailer] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
+  const [saved, setSaved] = useState(false);
+  const [playTrailer, setPlayTrailer] = useState(false)
 
   useEffect(() => {
     const loadMovie = async () => {
@@ -27,6 +34,8 @@ const MovieDetails = () => {
         setError(null)
         const details = await fetchMovieDetails(id)
         setMovie(details)
+        const trailerData = await fetchMovieTrailer(id)
+        setTrailer(trailerData)
         const exists = await isMovieSaved(details.id)
         setSaved(exists)
       } catch (err) {
@@ -75,27 +84,63 @@ const MovieDetails = () => {
     )
   }
 
+  if (!isAuthenticated) {
+    return <LoginRequired />
+  }
+
   return (
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
 
       <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 80 }}>
-        <Image
-          source={{
-            uri: movie.poster_path
-              ? `https://image.tmdb.org/t/p/w500/${movie.poster_path}`
-              : 'https://placeholder.co/600x400/1a1a1a/ffffff.png',
-          }}
-          className='w-full h-[450px] rounded-2xl mt-16'
-          resizeMode='stretch'
-        />
+        <View className="mt-16 rounded-2xl overflow-hidden">
 
-        <Text className='text-white text-2xl font-bold mt-5'>{movie.title}</Text>
+          {playTrailer && trailer ? (
+            <YoutubePlayer
+              height={250}
+              play={playTrailer}
+              videoId={trailer.key}
+              onChangeState={(state: any) => {
+                if (state === "ended") {
+                  setPlayTrailer(false)
+                }
+              }}
+            />
+          ) : (
+            <Image
+              source={{
+                uri: movie.poster_path
+                  ? `https://image.tmdb.org/t/p/w500/${movie.poster_path}`
+                  : "https://placeholder.co/600x400/1a1a1a/ffffff.png",
+              }}
+              className="w-full h-[450px]"
+              resizeMode="stretch"
+            />
+          )}
+        </View>
+
+        <View className="flex-row items-center mt-5">
+          <Text className="text-white text-2xl font-bold flex-1">
+            {movie.title}
+          </Text>
+
+          {trailer && (
+            <TouchableOpacity
+              className="bg-accent px-3 py-2 rounded-lg ml-3"
+              onPress={() => setPlayTrailer(!playTrailer)}
+            >
+              <Text className="text-black font-bold">
+                {playTrailer ? "■ Stop" : "▶ Play"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <Text className='text-light-200 mt-1'>
           {new Date(movie.release_date).getFullYear()} • {movie.runtime ? `${movie.runtime} min` : 'N/A'}
         </Text>
 
-        <View className='flex-row items-center mt-4 text-light-200 bg-dark-100 p-2f rounded-lg self-start'>
+        <View className='flex-row items-center mt-4 text-light-200 bg-dark-100 p-2 rounded-lg self-start'>
           <Image source={icons.star} className='size-5 mr-2' />
           <Text className='text-white font-bold text-base'>{movie.vote_average.toFixed(1)}</Text>
           <Text className='text-light-200 ml-2'>({movie.vote_count} votes)</Text>
@@ -201,7 +246,7 @@ const MovieDetails = () => {
           )}
         </View>
 
-        <TouchableOpacity className='absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50' onPress={() => router.back()}>
+        <TouchableOpacity className='absolute bottom-5 left-0 right-0 mx-2 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50' onPress={() => router.back()}>
           <Image source={icons.arrow} className='size-5 mr-1 mt-0.5 rotate-180' tintColor="#fff" />
           <Text className="text-white font-semibold text-base">
             Go Back

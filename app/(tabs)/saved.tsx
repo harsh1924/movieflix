@@ -1,12 +1,16 @@
+import LoginRequired from '@/components/LoginRequired'
 import MovieCard from '@/components/MovieCard'
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
+import { useAuth } from '@/context/AuthContext'
 import { getSavedMovies } from '@/services/savedMovies'
-import { useFocusEffect } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import React, { useCallback, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
 
 const Saved = () => {
+  const { isAuthenticated, logout } = useAuth();
+
   const [movies, setMovies] = useState<SavedMovie[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -22,6 +26,10 @@ const Saved = () => {
       loadSaved()
     }, [loadSaved])
   )
+
+  if (!isAuthenticated) {
+    return <LoginRequired />
+  }
 
   return (
     <View className='flex-1 bg-primary'>
@@ -41,7 +49,26 @@ const Saved = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         ListHeaderComponent={
           <View className='w-full mt-20 mb-8'>
-            <Image source={icons.logo} className='w-12 h-10 self-center mb-4' />
+            <View className="flex-row mt-5 mb-10 items-center justify-between px-5">
+              <Image source={icons.logo} className="w-12 h-10" />
+              {isAuthenticated ? (
+                <TouchableOpacity
+                  className="bg-accent px-4 py-2 rounded"
+                  onPress={async () => {
+                    await logout();
+                    router.replace("/");
+                  }}
+                >
+                  <Text className="text-white">Log Out</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  className="bg-accent px-4 py-2 rounded"
+                  onPress={() => router.push("/sign-in")}>
+                  <Text className="text-white">Log In</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <Text className='text-white text-2xl font-bold'>Saved Movies</Text>
             <Text className='text-light-200 mt-2'>Your bookmarked movies are listed here.</Text>
           </View>

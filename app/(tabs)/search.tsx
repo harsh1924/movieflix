@@ -20,7 +20,7 @@ const Search = () => {
     reset
   } = useFetch(() => fetchMovies({
     query: searchQuery
-  }), false);
+  }), [], false);
 
   useEffect(() => {
     const timeoutId = setTimeout(async () => {

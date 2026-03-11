@@ -1,12 +1,15 @@
+import LoginRequired from '@/components/LoginRequired'
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
+import { useAuth } from '@/context/AuthContext'
 import { getSavedMovies } from '@/services/savedMovies'
 import { useFocusEffect, useRouter } from 'expo-router'
 import React, { useCallback, useMemo, useState } from 'react'
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 const Profile = () => {
-  const router = useRouter()
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const [savedMovies, setSavedMovies] = useState<SavedMovie[]>([])
 
@@ -38,6 +41,8 @@ const Profile = () => {
       ?.toString() ?? 'N/A'
   }, [savedMovies])
 
+  if (!isAuthenticated) return <LoginRequired />
+
   return (
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
@@ -48,7 +53,8 @@ const Profile = () => {
             <Image source={icons.person} className='size-12' tintColor='#fff' />
           </View>
 
-          <Text className='text-white text-2xl font-bold mt-4'>Movie Explorer</Text>
+          <Text className='text-white text-2xl font-bold mt-4'>{user?.name || 'Movie Explorer'}</Text>
+          <Text className='text-light-100 mt-1'>{user?.email || 'movie@explorer.com'}</Text>
           <Text className='text-light-200 mt-1'>Keep your next watchlist ready</Text>
         </View>
 
@@ -97,6 +103,18 @@ const Profile = () => {
           >
             <Text className='text-white text-center font-semibold text-base'>Open Saved Collection</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            className='border-accent border rounded-xl mt-10 py-4 mb-3'
+            onPress={async () => {
+              await logout();
+              router.replace("/");
+            }}
+            activeOpacity={0.85}
+          >
+            <Text className='text-white text-center font-bold text-base'>Log Out</Text>
+          </TouchableOpacity>
+
         </View>
       </ScrollView>
     </View>

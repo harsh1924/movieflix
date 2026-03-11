@@ -1,7 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 
-const useFetch = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
+const useFetch = <T>(
+    fetchFunction: () => Promise<T>, 
+    deps: any[] = [],
+    autoFetch = true
+) => {
     const [data, setData] = useState<T | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error | null>(null);
@@ -32,7 +36,7 @@ const useFetch = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
         if (autoFetch) {
             fetchData();
         }
-    }, []);
+    }, deps);
 
     return { data, loading, error, refetch: fetchData, reset };
 }
