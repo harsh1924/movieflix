@@ -5,9 +5,12 @@ import { Link } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Image, Text, TouchableOpacity, View } from 'react-native'
 
-const MovieCard = ({ title, id, poster_path, vote_average, release_date }: SavedMovie) => {
+const MovieCard = ({ title, id, poster_path, vote_average, release_date, media_type }: SavedMovie) => {
     const [saved, setSaved] = useState(false)
     const { isAuthenticated } = useAuth();
+    const cardHref = media_type === 'tv'
+        ? ({ pathname: '/tv/[id]', params: { id: String(id) } } as any)
+        : ({ pathname: '/movies/[id]', params: { id: String(id) } } as any)
 
     useEffect(() => {
         let mounted = true
@@ -27,7 +30,7 @@ const MovieCard = ({ title, id, poster_path, vote_average, release_date }: Saved
     }, [id])
 
     const handleToggleSave = async () => {
-        const movie: SavedMovie = { title, id, poster_path, vote_average, release_date }
+        const movie: SavedMovie = { title, id, poster_path, vote_average, release_date, media_type }
 
         if (saved) {
             await removeSavedMovie(id)
@@ -39,8 +42,8 @@ const MovieCard = ({ title, id, poster_path, vote_average, release_date }: Saved
     }
 
     return (
-        <View className='flex-1 w-[30%]'>
-            <Link href={`/movies/${id}`} asChild className='flex-1'>
+        <View className='flex-1 w-[30%] mb-3'>
+            <Link href={cardHref} asChild className='flex-1'>
                 <TouchableOpacity className='text-white text-sm'>
                     {/* Poster and Title */}
                     <Image
@@ -55,16 +58,16 @@ const MovieCard = ({ title, id, poster_path, vote_average, release_date }: Saved
                     {/* Review */}
                     <View className='flex-row items-center justify-start gap-x-1'>
                         <Image source={icons.star} className='size-4' />
-                        <Text className='text-white text-sm font-bold uppercase'>{vote_average.toFixed(1)}</Text>
+                        <Text className='text-white text-sm font-bold uppercase'>{(vote_average ?? 0).toFixed(1)}</Text>
                     </View>
 
                     {/* Release Date */}
                     <View className='flex-row items-center justify-between'>
                         <Text className='text-xs text-light-300 font-medium mt-1'>
-                            {new Date(release_date).getFullYear()}
+                            {release_date ? new Date(release_date).getFullYear() : 'N/A'}
                         </Text>
                         <Text className='text-xs font-medium text-light-300 uppercase'>
-                            Movie
+                            {media_type === 'tv' ? 'TV Show' : 'Movie'}
                         </Text>
                     </View>
                 </TouchableOpacity>

@@ -74,6 +74,7 @@ interface MovieDetails {
 interface TrendingCardProps {
   movie: TrendingMovie;
   index: number;
+  mediaType?: 'movie' | 'tv';
 }
 
 interface SavedMovie {
@@ -82,6 +83,7 @@ interface SavedMovie {
   poster_path: string;
   vote_average: number;
   release_date: string;
+  media_type?: 'movie' | 'tv';
 }
 
 interface CustomInputProps {

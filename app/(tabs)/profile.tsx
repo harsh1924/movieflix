@@ -48,7 +48,13 @@ const Profile = () => {
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
 
       <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 120 }}>
-        <View className='mt-20 items-center'>
+        <View className='mt-16 items-end'>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => router.replace('/')}>
+            <Image source={icons.logo} className='w-12 h-10' />
+          </TouchableOpacity>
+        </View>
+
+        <View className='mt-4 items-center'>
           <View className='size-24 rounded-full bg-light-100/20 items-center justify-center'>
             <Image source={icons.person} className='size-12' tintColor='#fff' />
           </View>
