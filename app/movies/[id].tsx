@@ -5,13 +5,15 @@ import { images } from '@/constants/images'
 import { useAuth } from '@/context/AuthContext'
 import { fetchCollection, fetchFullMovieDetails, fetchFullTVDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import YoutubePlayer from "react-native-youtube-iframe"
 
 const MovieDetails = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const initial = user!.name.charAt(0).toUpperCase() || "";
 
   const { id } = useLocalSearchParams<{ id: string }>()
 
@@ -56,7 +58,6 @@ const MovieDetails = () => {
     playTrailer,
     error,
     providers,
-    reviews,
     collection,
     movie,
     relatedMovies,
@@ -212,7 +213,8 @@ const MovieDetails = () => {
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
 
       <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 80 }}>
-        <View className='mt-16 mb-3 flex-row items-center justify-between'>
+        {/* Back Button and Logo */}
+        <View className='mt-14 mb-3 flex-row items-center justify-between'>
           <TouchableOpacity
             className='bg-black/70 border border-gray-500 rounded-lg p-2 self-start'
             onPress={() => router.back()}
@@ -223,10 +225,17 @@ const MovieDetails = () => {
           <TouchableOpacity activeOpacity={0.85} onPress={() => router.replace('/')}>
             <Image source={icons.logo} className='w-12 h-10' />
           </TouchableOpacity>
+
+          <View className="w-10 h-10 rounded-full bg-[#ab8bff] items-center justify-center">
+            <Text className="text-white text-lg font-bold">
+              {initial}
+            </Text>
+          </View>
         </View>
 
-        <View className='rounded-2xl overflow-hidden relative'>
+        <View className='rounded-3xl overflow-hidden relative' >
 
+          {/* Image and Trailer */}
           {playTrailer && trailer ? (
             <YoutubePlayer
               height={320}
@@ -250,7 +259,7 @@ const MovieDetails = () => {
                     ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
                     : "https://placeholder.co/1280x720/1a1a1a/ffffff.png",
               }}
-              className="w-full h-[320px]"
+              className="w-full h-[420px]"
               resizeMode="cover"
             />
           )}
@@ -271,28 +280,46 @@ const MovieDetails = () => {
             </View>
           )}
 
+          {/* Title */}
           {!playTrailer && (
             <>
-              <View className="absolute left-0 right-0 top-0 h-24 " />
-              <View className="absolute left-0 right-0 bottom-0 px-4 py-4 bg-black/40">
+              <LinearGradient
+                colors={['rgba(3,0,20,0)', 'rgba(3,0,20,0.25)', 'rgba(3,0,20,0.95)']}
+                start={{ x: 0.5, y: 0.15 }}
+                end={{ x: 0.5, y: 1 }}
+                className='absolute inset-0'
+              />
+              <View className="absolute left-0 right-0 bottom-0 px-4 pb-5">
+
+                {/* Title */}
                 <Text className="text-white text-3xl font-bold" numberOfLines={1}>
                   {movie.title}
                 </Text>
 
-                <Text className="text-light-200 text-sm mt-1" numberOfLines={1}>
-                  {new Date(movie.release_date).getFullYear()} • {movie.runtime ? `${movie.runtime} min` : 'N/A'}
-                </Text>
+                {/* Release Date, Runtime */}
+                <View className="flex-row gap-2 mt-1" >
+                  <Text className='text-light-200 text-sm'>
+                    {new Date(movie.release_date).getFullYear()}
+                  </Text>
+                  <Text className='text-light-200 text-sm'>•</Text>
+                  <Text className='text-light-200 text-sm'>
+                    {movie.runtime
+                      ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60 ? `${movie.runtime % 60}m` : ''}`
+                      : 'N/A'}
+                  </Text>
+                </View>
 
+                {/* Rating */}
                 <View className='flex-row items-center mt-2 self-start bg-dark-100 px-2 py-1 rounded-lg'>
                   <Image source={icons.star} className='size-4 mr-1' />
-                  <Text className='text-white font-bold text-sm'>{movie.vote_average.toFixed(1)}</Text>
-                  <Text className='text-light-200 ml-2 text-xs'>({movie.vote_count} votes)</Text>
+                  <Text className='text-white font-bold text-sm'>{movie.vote_average.toFixed(1)}/10</Text>
+                  {/* <Text? className='text-light-200 ml-2 text-xs'>({movie.vote_count} votes)</Text> */}
                 </View>
 
                 <View className="flex-row mt-3 gap-2">
                   {trailer && (
                     <TouchableOpacity
-                      className="bg-white px-4 py-2 rounded-lg"
+                      className="bg-accent px-4 py-2 rounded-lg"
                       onPress={() =>
                         setState((prev) => ({
                           ...prev,
@@ -326,6 +353,7 @@ const MovieDetails = () => {
           <Text className='text-light-200 mt-2 leading-6'>{movie.overview || 'No overview available.'}</Text>
         </View>
 
+        {/* Movie Details */}
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Movie Details</Text>
 
@@ -349,7 +377,11 @@ const MovieDetails = () => {
 
             <View className='w-[48%]'>
               <Text className='text-light-200'>Runtime</Text>
-              <Text className='text-white mt-1'>{movie.runtime ? `${movie.runtime} min` : 'N/A'}</Text>
+              <Text className='text-white mt-1'>
+                {movie.runtime
+                  ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60 ? `${movie.runtime % 60}m` : ''}`
+                  : 'N/A'}
+              </Text>
             </View>
           </View>
 
@@ -378,18 +410,6 @@ const MovieDetails = () => {
             </View>
 
             <View className='w-[48%]'>
-              <Text className='text-light-200'>Status</Text>
-              <Text className='text-white mt-1'>{movie.status || 'N/A'}</Text>
-            </View>
-          </View>
-
-          <View className='mt-3 flex-row justify-between gap-x-4'>
-            <View className='w-[48%]'>
-              <Text className='text-light-200'>Original Language</Text>
-              <Text className='text-white mt-1 uppercase'>{movie.original_language || 'N/A'}</Text>
-            </View>
-
-            <View className='w-[48%]'>
               <Text className='text-light-200'>Languages</Text>
               <Text className='text-white mt-1'>
                 {movie.spoken_languages?.length
@@ -397,15 +417,6 @@ const MovieDetails = () => {
                   : 'N/A'}
               </Text>
             </View>
-          </View>
-
-          <View className='mt-3'>
-            <Text className='text-light-200'>Production Countries</Text>
-            <Text className='text-white mt-1'>
-              {movie.production_countries?.length
-                ? movie.production_countries.map((country) => country.name).join(', ')
-                : 'N/A'}
-            </Text>
           </View>
         </View>
 
@@ -417,7 +428,7 @@ const MovieDetails = () => {
               movie.genres.map((genre) => (
                 <Text
                   key={genre.id}
-                  className="text-light-200 bg-dark-100 px-3 py-1 mr-2 mb-2 rounded-lg"
+                  className="bg-dark-100/70 text-white px-3 py-2 rounded-full text-sm mr-2 mb-2"
                 >
                   {genre.name}
                 </Text>
@@ -432,6 +443,48 @@ const MovieDetails = () => {
           <Text className='text-white text-lg font-semibold'>Tagline</Text>
           <Text className='text-light-200 mt-2 leading-6'>{movie.tagline || 'N/A'}</Text>
         </View>
+
+        {/* Cast Section */}
+        {cast.length > 0 && (
+          <View className="mt-8">
+            <Text className="text-white text-lg font-bold mb-3">
+              Cast
+            </Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {cast.map((actor) => (
+                <TouchableOpacity
+                  key={actor.id}
+                  className="mr-4 w-[90px]"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/actors/[id]',
+                      params: { id: String(actor.id) },
+                    })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri: actor.profile_path
+                        ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                        : "https://placeholder.co/100x150"
+                    }}
+                    className="w-[90px] h-[120px] rounded-lg"
+                    resizeMode="cover"
+                  />
+
+                  <Text className="text-white text-center font-bold text-sm mt-2" numberOfLines={1}>
+                    {actor.name}
+                  </Text>
+
+                  <Text className="text-light-200 text-center text-xs" numberOfLines={1}>
+                    {actor.character}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Image Gallery */}
         {galleryImages.length > 0 && (
@@ -469,54 +522,7 @@ const MovieDetails = () => {
           </View>
         )}
 
-        {/* Related Movies */}
-        {relatedMovies.length > 0 && (
-          <View className="mt-8">
-            <HorizontalMovieSection title="Related Movies" movies={relatedMovies} sectionKey="related" />
-          </View>
-        )}
-
-        {/* Cast Section */}
-        {cast.length > 0 && (
-          <View className="mt-8">
-            <Text className="text-white text-lg font-semibold mb-3">
-              Cast
-            </Text>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {cast.map((actor) => (
-                <TouchableOpacity
-                  key={actor.id}
-                  className="mr-4 w-[90px]"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/actors/[id]',
-                      params: { id: String(actor.id) },
-                    })
-                  }
-                >
-                  <Image
-                    source={{
-                      uri: actor.profile_path
-                        ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                        : "https://placeholder.co/100x150"
-                    }}
-                    className="w-[90px] h-[120px] rounded-lg"
-                  />
-
-                  <Text className="text-white text-xs mt-2" numberOfLines={1}>
-                    {actor.name}
-                  </Text>
-
-                  <Text className="text-light-200 text-xs" numberOfLines={1}>
-                    {actor.character}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
+        {/* Production / Creators / Networks */}
         <View className='mt-8'>
           <Text className='text-white text-lg font-semibold mb-3'>Production / Creators / Networks</Text>
 
@@ -540,7 +546,7 @@ const MovieDetails = () => {
 
               <View className='h-px bg-white/15 mt-5 mb-4' />
 
-              <Text className='text-light-200'>Networks</Text>
+              <Text className='text-light-200'>Available on</Text>
               {providers.length > 0 ? (
                 <View className='mt-2'>
                   {providers.map((provider) => (
@@ -624,24 +630,10 @@ const MovieDetails = () => {
           </View>
         )}
 
-        {/* Reviews */}
-        {reviews.length > 0 && (
-          <View className="mt-8">
-            <Text className="text-white text-lg font-semibold mb-3">
-              Reviews
-            </Text>
-
-            {reviews.map((review) => (
-              <View key={review.id} className="bg-dark-100 p-3 rounded-lg mb-3">
-                <Text className="text-white font-semibold">
-                  {review.author}
-                </Text>
-
-                <Text className="text-light-200 mt-2">
-                  {review.content.slice(0, 200)}...
-                </Text>
-              </View>
-            ))}
+        {/* Related Movies */}
+        {relatedMovies.length > 0 && (
+          <View className="mt-5">
+            <HorizontalMovieSection title="Related Movies" movies={relatedMovies} sectionKey="related" />
           </View>
         )}
 

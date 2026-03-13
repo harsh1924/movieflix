@@ -277,7 +277,7 @@ export const fetchFullTVDetails = async (id: string) => {
 
 export const fetchTVSeasonDetails = async (tvId: string, seasonNumber: number) => {
   const res = await fetch(
-    `${TMDB_CONFIG.BASE_URL}/tv/${tvId}/season/${seasonNumber}`,
+    `${TMDB_CONFIG.BASE_URL}/tv/${tvId}/season/${seasonNumber}?append_to_response=aggregate_credits,credits,images`,
     {
       method: "GET",
       headers: TMDB_CONFIG.headers

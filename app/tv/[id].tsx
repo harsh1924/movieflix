@@ -5,13 +5,15 @@ import { images } from '@/constants/images'
 import { useAuth } from '@/context/AuthContext'
 import { fetchFullTVDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import YoutubePlayer from 'react-native-youtube-iframe'
 
 const TvDetails = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth();
+  const initial = user!.name.charAt(0).toUpperCase() || ""
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const [state, setState] = useState<{
@@ -46,7 +48,6 @@ const TvDetails = () => {
     saved,
     tv,
     cast,
-    reviews,
     relatedShows,
     galleryImages,
     trailer,
@@ -138,6 +139,7 @@ const TvDetails = () => {
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
 
       <ScrollView className='flex-1 px-5' contentContainerStyle={{ paddingBottom: 80 }}>
+        {/* Header row: back button, app logo, and user initial avatar */}
         <View className='mt-16 mb-3 flex-row items-center justify-between'>
           <TouchableOpacity
             className='bg-black/70 border border-gray-500 rounded-lg p-2 self-start'
@@ -149,9 +151,16 @@ const TvDetails = () => {
           <TouchableOpacity activeOpacity={0.85} onPress={() => router.replace('/')}>
             <Image source={icons.logo} className='w-12 h-10' />
           </TouchableOpacity>
+
+          <View className="w-10 h-10 rounded-full bg-[#ab8bff] items-center justify-center">
+            <Text className="text-white text-lg font-bold">
+              {initial}
+            </Text>
+          </View>
         </View>
 
-        <View className='rounded-2xl overflow-hidden relative'>
+        {/* Hero section: trailer/backdrop preview with title, rating, and primary actions */}
+        <View className='rounded-3xl overflow-hidden relative'>
           {playTrailer && trailer ? (
             <YoutubePlayer
               height={320}
@@ -172,7 +181,7 @@ const TvDetails = () => {
                     ? `https://image.tmdb.org/t/p/w1280${tv.backdrop_path}`
                     : 'https://placeholder.co/1280x720/1a1a1a/ffffff.png',
               }}
-              className='w-full h-[320px]'
+              className='w-full h-[420px]'
               resizeMode='cover'
             />
           )}
@@ -189,50 +198,59 @@ const TvDetails = () => {
           )}
 
           {!playTrailer && (
-            <View className='absolute left-0 right-0 bottom-0 px-4 py-4 bg-black/40'>
-              <Text className='text-white text-3xl font-bold' numberOfLines={1}>
-                {tv.name}
-              </Text>
+            <>
+              <LinearGradient
+                colors={['rgba(3,0,20,0)', 'rgba(3,0,20,0.25)', 'rgba(3,0,20,0.95)']}
+                start={{ x: 0.5, y: 0.15 }}
+                end={{ x: 0.5, y: 1 }}
+                className='absolute inset-0'
+              />
+              <View className='absolute left-0 right-0 bottom-0 px-4 pb-5'>
+                <Text className='text-white text-3xl font-bold' numberOfLines={1}>
+                  {tv.name}
+                </Text>
 
-              <Text className='text-light-200 text-sm mt-1' numberOfLines={1}>
-                {tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : 'N/A'} • {tv.number_of_seasons || 0} Seasons
-              </Text>
+                <Text className='text-light-200 text-sm mt-1' numberOfLines={1}>
+                  {tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : 'N/A'} • {tv.number_of_seasons || 0} Seasons
+                </Text>
 
-              <View className='flex-row items-center mt-2 self-start bg-dark-100 px-2 py-1 rounded-lg'>
-                <Image source={icons.star} className='size-4 mr-1' />
-                <Text className='text-white font-bold text-sm'>{tv.vote_average?.toFixed(1) || 'N/A'}</Text>
-                <Text className='text-light-200 ml-2 '>({tv.vote_count || 0} votes)</Text>
-              </View>
+                <View className='flex-row items-center mt-2 self-start bg-dark-100 px-2 py-1 rounded-lg'>
+                  <Image source={icons.star} className='size-4 mr-1' />
+                  <Text className='text-white font-bold text-sm'>{tv.vote_average?.toFixed(1) || 'N/A'}/10</Text>
+                </View>
 
-              <View className='flex-row mt-3 gap-2'>
-                {trailer && (
+                <View className='flex-row mt-3 gap-2'>
+                  {trailer && (
+                    <TouchableOpacity
+                      className='bg-accent px-4 py-2 rounded-lg'
+                      onPress={() => setState((prev) => ({ ...prev, playTrailer: true }))}
+                    >
+                      <Text className='text-black font-bold'>Play Trailer</Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
-                    className='bg-white px-4 py-2 rounded-lg'
-                    onPress={() => setState((prev) => ({ ...prev, playTrailer: true }))}
+                    className='bg-black/70 border border-gray-500 px-4 py-2 rounded-lg'
+                    onPress={handleToggleSave}
+                    activeOpacity={0.85}
                   >
-                    <Text className='text-black font-bold'>Play Trailer</Text>
+                    <Text className='text-white font-bold'>
+                      {saved ? 'In My List' : '+ My List'}
+                    </Text>
                   </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  className='bg-black/70 border border-gray-500 px-4 py-2 rounded-lg'
-                  onPress={handleToggleSave}
-                  activeOpacity={0.85}
-                >
-                  <Text className='text-white font-bold'>
-                    {saved ? 'In My List' : '+ My List'}
-                  </Text>
-                </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </>
           )}
         </View>
 
+        {/* Overview section: short synopsis of the TV show */}
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Overview</Text>
           <Text className='text-light-200 mt-2 leading-6'>{tv.overview || 'No overview available.'}</Text>
         </View>
 
+        {/* Details grid: core metadata like dates, seasons, runtime, language, status, and type */}
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>TV Details</Text>
 
@@ -274,9 +292,9 @@ const TvDetails = () => {
 
           <View className='mt-3 flex-row justify-between gap-x-4'>
             <View className='w-[48%]'>
-              <Text className='text-light-200 '>Episode Runtime</Text>
-              <Text className='text-white mt-1'>
-                {tv.episode_run_time?.length ? `${tv.episode_run_time.join(', ')} min` : 'N/A'}
+              <Text className='text-light-200 '>Languages</Text>
+              <Text className='text-white mt-1 uppercase'>
+                {tv.languages?.length ? tv.languages.join(', ') : 'N/A'}
               </Text>
             </View>
 
@@ -288,39 +306,15 @@ const TvDetails = () => {
             </View>
           </View>
 
-          <View className='mt-3 flex-row justify-between gap-x-4'>
-            <View className='w-[48%]'>
-              <Text className='text-light-200 '>Status</Text>
-              <Text className='text-white mt-1'>{tv.status || 'N/A'}</Text>
-            </View>
-
-            <View className='w-[48%]'>
-              <Text className='text-light-200 '>Type</Text>
-              <Text className='text-white mt-1'>{tv.type || 'N/A'}</Text>
-            </View>
-          </View>
-
-          <View className='mt-3 flex-row justify-between gap-x-4'>
-            <View className='w-[48%]'>
-              <Text className='text-light-200 '>Original Language</Text>
-              <Text className='text-white mt-1 uppercase'>{tv.original_language || 'N/A'}</Text>
-            </View>
-
-            <View className='w-[48%]'>
-              <Text className='text-light-200 '>Languages</Text>
-              <Text className='text-white mt-1 uppercase'>
-                {tv.languages?.length ? tv.languages.join(', ') : 'N/A'}
-              </Text>
-            </View>
-          </View>
         </View>
 
+        {/* Genre chips: category tags for quick classification */}
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Genres</Text>
           <View className='flex-row flex-wrap mt-2'>
             {tv.genres?.length ? (
               tv.genres.map((genre: any) => (
-                <Text key={genre.id} className='text-light-200 bg-dark-100 px-3 py-1 mr-2 mb-2 rounded-lg'>
+                <Text key={genre.id} className='bg-dark-100/70 text-white px-3 py-2 rounded-full text-sm mr-2 mb-2'>
                   {genre.name}
                 </Text>
               ))
@@ -330,27 +324,9 @@ const TvDetails = () => {
           </View>
         </View>
 
-        {galleryImages.length > 0 && (
-          <View className='mt-8'>
-            <Text className='text-white text-lg font-semibold mb-3'>Image Gallery</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {galleryImages.map((img: any, index: number) => (
-                <TouchableOpacity
-                  key={`${img.file_path}-${index}`}
-                  className='mr-3 rounded-xl overflow-hidden'
-                  onPress={() => setState((prev) => ({ ...prev, selectedBackdrop: img.file_path }))}
-                >
-                  <Image
-                    source={{ uri: `https://image.tmdb.org/t/p/w500${img.file_path}` }}
-                    className='w-[170px] h-[100px]'
-                    resizeMode='cover'
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
+
+        {/* Cast strip: actor cards with profile, role, and navigation to actor details */}
         {cast.length > 0 && (
           <View className='mt-8'>
             <Text className='text-white text-lg font-semibold mb-3'>Cast</Text>
@@ -382,7 +358,76 @@ const TvDetails = () => {
           </View>
         )}
 
+        {/* Gallery strip: selectable backdrops that update the hero image */}
+        {galleryImages.length > 0 && (
+          <View className='mt-8'>
+            <Text className='text-white text-lg font-semibold mb-3'>Image Gallery</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {galleryImages.map((img: any, index: number) => (
+                <TouchableOpacity
+                  key={`${img.file_path}-${index}`}
+                  className='mr-3 rounded-xl overflow-hidden'
+                  onPress={() => setState((prev) => ({ ...prev, selectedBackdrop: img.file_path }))}
+                >
+                  <Image
+                    source={{ uri: `https://image.tmdb.org/t/p/w500${img.file_path}` }}
+                    className='w-[170px] h-[100px]'
+                    resizeMode='cover'
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Production block: studios, creators, and broadcasting networks */}
+        <View className='mt-8'>
+          <Text className='text-white text-lg font-semibold mb-3'>Production / Creators / Networks</Text>
+
+          <View className='flex-row gap-x-4'>
+            <View className='flex-1 bg-dark-100/70 rounded-xl p-3'>
+              <Text className='text-light-200'>Production Companies</Text>
+              {tv.production_companies?.length ? (
+                tv.production_companies.map((company: any) => (
+                  <Text key={company.id} className='text-white mt-2'>
+                    {company.name}
+                  </Text>
+                ))
+              ) : (
+                <Text className='text-white mt-2'>N/A</Text>
+              )}
+            </View>
+
+            <View className='flex-1 bg-dark-100/70 rounded-xl p-3'>
+              <Text className='text-light-200'>Created By</Text>
+              {tv.created_by?.length ? (
+                tv.created_by.map((creator: any) => (
+                  <Text key={creator.id} className='text-white mt-2'>
+                    {creator.name}
+                  </Text>
+                ))
+              ) : (
+                <Text className='text-white mt-2'>N/A</Text>
+              )}
+
+              <View className='h-px bg-white/15 mt-5 mb-4' />
+
+              <Text className='text-light-200'>Available on</Text>
+              {tv.networks?.length ? (
+                tv.networks.map((network: any) => (
+                  <Text key={network.id} className='text-white mt-2'>
+                    {network.name}
+                  </Text>
+                ))
+              ) : (
+                <Text className='text-white mt-2'>N/A</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
         {tv.seasons?.length > 0 && (
+          /* Seasons strip: season posters and quick facts with navigation to season details */
           <View className='mt-8'>
             <Text className='text-white text-lg font-semibold mb-3'>Seasons</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -427,53 +472,9 @@ const TvDetails = () => {
           </View>
         )}
 
-        <View className='mt-8'>
-          <Text className='text-white text-lg font-semibold mb-3'>Production / Creators / Networks</Text>
-
-          <View className='flex-row gap-x-4'>
-            <View className='flex-1 bg-dark-100/70 rounded-xl p-3'>
-              <Text className='text-light-200'>Production Companies</Text>
-              {tv.production_companies?.length ? (
-                tv.production_companies.map((company: any) => (
-                  <Text key={company.id} className='text-white mt-2'>
-                    {company.name}
-                  </Text>
-                ))
-              ) : (
-                <Text className='text-white mt-2'>N/A</Text>
-              )}
-            </View>
-
-            <View className='flex-1 bg-dark-100/70 rounded-xl p-3'>
-              <Text className='text-light-200'>Created By</Text>
-              {tv.created_by?.length ? (
-                tv.created_by.map((creator: any) => (
-                  <Text key={creator.id} className='text-white mt-2'>
-                    {creator.name}
-                  </Text>
-                ))
-              ) : (
-                <Text className='text-white mt-2'>N/A</Text>
-              )}
-
-              <View className='h-px bg-white/15 mt-5 mb-4' />
-
-              <Text className='text-light-200'>Networks</Text>
-              {tv.networks?.length ? (
-                tv.networks.map((network: any) => (
-                  <Text key={network.id} className='text-white mt-2'>
-                    {network.name}
-                  </Text>
-                ))
-              ) : (
-                <Text className='text-white mt-2'>N/A</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
+{/* Recommendations: related TV titles rendered as a horizontal section */}
         {relatedShows.length > 0 && (
-          <View className='mt-8'>
+          <View className='mt-6'>
             <HorizontalMovieSection
               title='Related TV Shows'
               movies={relatedShows}
@@ -483,19 +484,6 @@ const TvDetails = () => {
           </View>
         )}
 
-        {reviews.length > 0 && (
-          <View className='mt-8'>
-            <Text className='text-white text-lg font-semibold mb-3'>Reviews</Text>
-            {reviews.map((review: any) => (
-              <View key={review.id} className='bg-dark-100 p-3 rounded-lg mb-3'>
-                <Text className='text-white font-semibold'>{review.author}</Text>
-                <Text className='text-light-200 mt-2'>
-                  {review.content?.slice(0, 200)}...
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
       </ScrollView>
     </View>
   )

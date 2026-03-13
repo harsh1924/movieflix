@@ -3,8 +3,9 @@ import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
 import { useAuth } from '@/context/AuthContext'
 import { fetchActorDetails, fetchActorMovies } from '@/services/api'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 type ActorState = {
@@ -15,7 +16,8 @@ type ActorState = {
 }
 
 const ActorDetails = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const initial = user!.name.charAt(0).toUpperCase() || ""
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const [state, setState] = useState<ActorState>({
@@ -26,6 +28,11 @@ const ActorDetails = () => {
   })
 
   const { loading, error, actor, movies } = state
+
+  const mostPopularMovieTitle = useMemo(() => {
+    if (!movies.length) return 'N/A'
+    return movies[0]?.title || 'N/A'
+  }, [movies])
 
   useEffect(() => {
     const loadActor = async () => {
@@ -111,34 +118,88 @@ const ActorDetails = () => {
           <TouchableOpacity activeOpacity={0.85} onPress={() => router.replace('/')}>
             <Image source={icons.logo} className='w-12 h-10' />
           </TouchableOpacity>
+
+          <View className="w-10 h-10 rounded-full bg-[#ab8bff] items-center justify-center">
+            <Text className="text-white text-lg font-bold">
+              {initial}
+            </Text>
+          </View>
         </View>
 
-        <View className='items-center'>
+        <View className='rounded-3xl overflow-hidden relative'>
           <Image
             source={{
               uri: actor.profile_path
-                ? `https://image.tmdb.org/t/p/w500${actor.profile_path}`
-                : 'https://placeholder.co/400x600/1a1a1a/ffffff.png',
+                ? `https://image.tmdb.org/t/p/w780${actor.profile_path}`
+                : 'https://placeholder.co/900x600/1a1a1a/ffffff.png',
             }}
-            className='w-[220px] h-[320px] rounded-2xl'
+            className='w-full h-[420px]'
             resizeMode='cover'
           />
 
-          <Text className='text-white text-2xl font-bold mt-5 text-center'>
-            {actor.name}
-          </Text>
+          <LinearGradient
+            colors={['rgba(3,0,20,0)', 'rgba(3,0,20,0.25)', 'rgba(3,0,20,0.95)']}
+            start={{ x: 0.5, y: 0.15 }}
+            end={{ x: 0.5, y: 1 }}
+            className='absolute inset-0'
+          />
 
-          <Text className='text-light-200 mt-1 text-center'>
-            {actor.known_for_department || 'N/A'}
-          </Text>
-
-          <View className='flex-row items-center mt-4 text-light-200 bg-dark-100 p-2 rounded-lg self-center'>
-            <Image source={icons.star} className='size-5 mr-2' />
-            <Text className='text-white font-bold text-base'>
-              {actor.popularity ? actor.popularity.toFixed(1) : 'N/A'}
+          <View className='absolute bottom-0 left-0 right-0 px-4 pb-5'>
+            <Text className='text-white text-2xl font-bold' numberOfLines={1}>
+              {actor.name}
             </Text>
-            <Text className='text-light-200 ml-2'>Popularity</Text>
+
+            <Text className='text-light-200 mt-1' numberOfLines={1}>
+              Acting: {actor.known_for_department || 'N/A'}
+            </Text>
+
+            <Text className='text-light-200 mt-1' numberOfLines={1}>
+              Known for: <Text className="text-accent">{mostPopularMovieTitle}</Text>
+            </Text>
           </View>
+        </View>
+
+        <View className="flex-1">
+          <View className="flex-row flex-wrap mt-6">
+
+            <View className="w-1/2 mb-4 pl-2">
+              <Text className="text-white text-lg font-semibold">Popularity</Text>
+              <Text className="text-light-200 mt-2">
+                {actor.popularity ? actor.popularity.toFixed(1) : 'N/A'}
+              </Text>
+            </View>
+
+            <View className="w-1/2 mb-4 pr-2">
+              <Text className="text-white text-lg font-semibold">Birthday</Text>
+              <Text className="text-light-200 mt-2">
+                {actor.birthday || 'N/A'}
+              </Text>
+            </View>
+
+            <View className="w-1/2 mb-4 pl-2">
+              <Text className="text-white text-lg font-semibold">Place of Birth</Text>
+              <Text className="text-light-200 mt-2">
+                {actor.place_of_birth || 'N/A'}
+              </Text>
+            </View>
+
+            <View className="w-1/2 mb-4 pr-2">
+              <Text className="text-white text-lg font-semibold">Gender</Text>
+              <Text className="text-light-200 mt-2">
+                {actor.gender === 2 ? "Male" : actor.gender === 1 ? "Female" : "N/A"}
+              </Text>
+            </View>
+          </View>
+
+          <View className="mt-6">
+            <Text className="text-white text-lg font-semibold">Also Known As</Text>
+            <Text className="text-light-200 mt-2">
+              {actor.also_known_as?.length
+                ? actor.also_known_as.slice(0, 3).join(', ')
+                : 'N/A'}
+            </Text>
+          </View>
+
         </View>
 
         <View className='mt-8'>
@@ -146,35 +207,6 @@ const ActorDetails = () => {
           <Text className='text-light-200 mt-2 leading-6'>
             {actor.biography || 'No biography available.'}
           </Text>
-        </View>
-
-        <View className='mt-6 flex-row'>
-          <View className='flex-1'>
-            <Text className='text-white text-lg font-semibold'>Birthday</Text>
-            <Text className='text-light-200 mt-2'>
-              {actor.birthday || 'N/A'}
-            </Text>
-          </View>
-
-          <View className='flex-1'>
-            <Text className='text-white text-lg font-semibold'>Place of Birth</Text>
-            <Text className='text-light-200 mt-2'>
-              {actor.place_of_birth || 'N/A'}
-            </Text>
-          </View>
-        </View>
-
-        <View className='mt-6'>
-          <Text className='text-white text-lg font-semibold'>Also Known As</Text>
-          {actor.also_known_as?.length ? (
-            actor.also_known_as.slice(0, 5).map((name: string, index: number) => (
-              <Text key={`${name}-${index}`} className='text-light-200 mt-2'>
-                {name}
-              </Text>
-            ))
-          ) : (
-            <Text className='text-light-200 mt-2'>N/A</Text>
-          )}
         </View>
 
         {movies.length > 0 && (
