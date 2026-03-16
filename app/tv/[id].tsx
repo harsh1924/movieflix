@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useReminder } from "@/hooks/useReminder"
 import { fetchFullTVDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
+import { openStreamingProvider } from '@/services/streaming'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { LinearGradient } from 'expo-linear-gradient'
@@ -66,6 +67,7 @@ const TvDetails = () => {
     title: tv?.name
   });
 
+  // Tv Show Details
   useEffect(() => {
     const loadTV = async () => {
       if (!id) {
@@ -145,6 +147,15 @@ const TvDetails = () => {
     return <LoginRequired />
   }
 
+  const networks = tv.networks || [];
+
+  let watchLabel = "";
+
+  if (networks.length > 0) {
+    const names = networks.slice(0, 2).map((n: any) => n.name).join(", ");
+    watchLabel = `▶ Watch on ${names}`;
+  }
+
   return (
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
@@ -174,7 +185,7 @@ const TvDetails = () => {
         <View className='rounded-3xl overflow-hidden relative'>
           {playTrailer && trailer ? (
             <YoutubePlayer
-              height={320}
+              height={260}
               play={playTrailer}
               videoId={trailer.key}
               onChangeState={(playerState: any) => {
@@ -198,12 +209,12 @@ const TvDetails = () => {
           )}
 
           {playTrailer && trailer && (
-            <View className='absolute bottom-3 right-3'>
+            <View className='absolute bottom-3 right-3 left-0 w-full'>
               <TouchableOpacity
-                className='bg-black/75 border border-gray-400 px-4 py-2 rounded-lg'
+                className='bg-black/75 border border-accent px-4 py-2 rounded-lg'
                 onPress={() => setState((prev) => ({ ...prev, playTrailer: false }))}
               >
-                <Text className='text-white font-bold'>Stop Trailer</Text>
+                <Text className='text-accent py-1 font-bold text-center'>Stop Trailer</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -276,6 +287,20 @@ const TvDetails = () => {
             </>
           )}
         </View>
+
+        {/* Watch on ... */}
+        {networks.length > 0 && (
+          <View className="mt-3">
+            <TouchableOpacity
+              className="bg-accent rounded-lg px-4 py-3 items-center"
+              onPress={() => openStreamingProvider(networks[0].name, tv.name)}
+            >
+              <Text className="text-black font-bold">
+                {watchLabel}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Overview section: short synopsis of the TV show */}
         <View className='mt-6'>
@@ -357,7 +382,51 @@ const TvDetails = () => {
           </View>
         </View>
 
-
+        {/* Seasons strip: season posters and quick facts with navigation to season details */}
+        {tv.seasons?.length > 0 && (
+          <View className='mt-8'>
+            <Text className='text-white text-lg font-semibold mb-3'>Seasons</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {tv.seasons.map((season: any) => (
+                <TouchableOpacity
+                  key={season.id}
+                  className='mr-4 w-[140px]'
+                  onPress={() =>
+                    router.push({
+                      pathname: '/tv/[id]/season/[seasonNumber]',
+                      params: {
+                        id: String(tv.id),
+                        seasonNumber: String(season.season_number ?? 1),
+                      },
+                    } as any)
+                  }
+                >
+                  <Image
+                    source={{
+                      uri: season.poster_path
+                        ? `https://image.tmdb.org/t/p/w500${season.poster_path}`
+                        : 'https://placeholder.co/200x300',
+                    }}
+                    className='w-[140px] h-[200px] rounded-lg'
+                    resizeMode='cover'
+                  />
+                  <Text className='text-white text-sm mt-2 font-semibold' numberOfLines={2}>
+                    {season.name}
+                  </Text>
+                  <Text className='text-light-200  mt-1'>
+                    Season {season.season_number ?? 'N/A'}
+                  </Text>
+                  <Text className='text-light-200  mt-1'>
+                    {season.episode_count || 0} Episodes
+                  </Text>
+                  <Text className='text-light-200  mt-1'>
+                    {season.air_date || 'Air date N/A'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Cast strip: actor cards with profile, role, and navigation to actor details */}
         {cast.length > 0 && (
@@ -393,22 +462,36 @@ const TvDetails = () => {
 
         {/* Gallery strip: selectable backdrops that update the hero image */}
         {galleryImages.length > 0 && (
-          <View className='mt-8'>
-            <Text className='text-white text-lg font-semibold mb-3'>Image Gallery</Text>
+          <View className="mt-8">
+            <Text className="text-white text-lg font-semibold mb-3">
+              Image Gallery
+            </Text>
+
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {galleryImages.map((img: any, index: number) => (
-                <TouchableOpacity
-                  key={`${img.file_path}-${index}`}
-                  className='mr-3 rounded-xl overflow-hidden'
-                  onPress={() => setState((prev) => ({ ...prev, selectedBackdrop: img.file_path }))}
-                >
-                  <Image
-                    source={{ uri: `https://image.tmdb.org/t/p/w500${img.file_path}` }}
-                    className='w-[170px] h-[100px]'
-                    resizeMode='cover'
-                  />
-                </TouchableOpacity>
-              ))}
+              {galleryImages.map((img, index) => {
+                const isActive = selectedBackdrop
+                  ? selectedBackdrop === img.file_path
+                  : tv.backdrop_path === img.file_path
+
+                return (
+                  <TouchableOpacity
+                    key={`${img.file_path}-${index}`}
+                    className={`mr-3 rounded-xl overflow-hidden border ${isActive ? 'border-accent' : 'border-transparent'}`}
+                    onPress={() =>
+                      setState((prev) => ({
+                        ...prev,
+                        selectedBackdrop: img.file_path,
+                      }))
+                    }
+                  >
+                    <Image
+                      source={{ uri: `https://image.tmdb.org/t/p/w500${img.file_path}` }}
+                      className="w-[170px] h-[100px]"
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                )
+              })}
             </ScrollView>
           </View>
         )}
@@ -458,52 +541,6 @@ const TvDetails = () => {
             </View>
           </View>
         </View>
-
-        {tv.seasons?.length > 0 && (
-          /* Seasons strip: season posters and quick facts with navigation to season details */
-          <View className='mt-8'>
-            <Text className='text-white text-lg font-semibold mb-3'>Seasons</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {tv.seasons.map((season: any) => (
-                <TouchableOpacity
-                  key={season.id}
-                  className='mr-4 w-[140px]'
-                  onPress={() =>
-                    router.push({
-                      pathname: '/tv/[id]/season/[seasonNumber]',
-                      params: {
-                        id: String(tv.id),
-                        seasonNumber: String(season.season_number ?? 1),
-                      },
-                    } as any)
-                  }
-                >
-                  <Image
-                    source={{
-                      uri: season.poster_path
-                        ? `https://image.tmdb.org/t/p/w500${season.poster_path}`
-                        : 'https://placeholder.co/200x300',
-                    }}
-                    className='w-[140px] h-[200px] rounded-lg'
-                    resizeMode='cover'
-                  />
-                  <Text className='text-white text-sm mt-2 font-semibold' numberOfLines={2}>
-                    {season.name}
-                  </Text>
-                  <Text className='text-light-200  mt-1'>
-                    Season {season.season_number ?? 'N/A'}
-                  </Text>
-                  <Text className='text-light-200  mt-1'>
-                    {season.episode_count || 0} Episodes
-                  </Text>
-                  <Text className='text-light-200  mt-1'>
-                    {season.air_date || 'Air date N/A'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         {/* Recommendations: related TV titles rendered as a horizontal section */}
         {relatedShows.length > 0 && (

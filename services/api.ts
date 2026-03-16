@@ -303,3 +303,13 @@ export const fetchActors = async (query: string, page = 1) => {
   return data.results
 }
 
+export const isMovieInTheatres = async (movieId: number) => {
+  const res = await fetch(`${TMDB_CONFIG.BASE_URL}/movie/now_playing`, {
+    method: "GET",
+    headers: TMDB_CONFIG.headers
+  });
+
+  const data = await res.json();
+
+  return data.results.some((movie: any) => movie.id === movieId);
+};

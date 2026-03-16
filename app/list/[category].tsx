@@ -2,10 +2,10 @@ import MovieCard from '@/components/MovieCard'
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
 import {
-    fetchPopularMovies,
-    fetchPopularTV,
-    fetchTopRatedMovies,
-    fetchTopRatedTV,
+  fetchPopularMovies,
+  fetchPopularTV,
+  fetchTopRatedMovies,
+  fetchTopRatedTV,
 } from '@/services/api'
 import useFetch from '@/services/useFetch'
 import { router, useLocalSearchParams } from 'expo-router'

@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useReminder } from "@/hooks/useReminder";
 import { fetchCollection, fetchFullMovieDetails, fetchFullTVDetails } from '@/services/api';
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies';
+import { openNearbyTheatres, openStreamingProvider } from '@/services/streaming';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +20,7 @@ const MovieDetails = () => {
   const initial = user!.name.charAt(0).toUpperCase() || "";
   const { id } = useLocalSearchParams<{ id: string }>()
   const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [opening, setOpening] = useState(false);
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
 
   const [state, setState] = useState<{
@@ -67,8 +69,10 @@ const MovieDetails = () => {
     relatedMovies,
     galleryImages,
     selectedBackdrop,
+
   } = state
 
+  // Movie Data
   useEffect(() => {
     const loadMovie = async () => {
       if (!id) {
@@ -124,7 +128,7 @@ const MovieDetails = () => {
         ) || null
 
         const exists = await isMovieSaved(details.id)
-        const castData = fullDetails?.credits?.cast?.slice(0, 10) || []
+        const castData = fullDetails?.credits?.cast?.slice(0, 15) || []
         const watchProviders = fullDetails?.['watch/providers']?.results?.IN?.flatrate || []
         const topReviews = fullDetails?.reviews?.results?.slice(0, 3) || []
         const movieImages = fullDetails?.images?.backdrops || []
@@ -222,6 +226,42 @@ const MovieDetails = () => {
     return <LoginRequired />
   }
 
+  const releaseDate = movie?.release_date ? new Date(movie.release_date) : null;
+  const today = new Date();
+  let releaseLabel = "Coming Soon"
+
+  if (releaseDate) {
+    const diffDays =
+      (today.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24)
+
+    const isStreaming = providers.length > 0
+
+    if (releaseDate > today) {
+      releaseLabel = "Coming Soon"
+    } else if (isStreaming) {
+      const names = providers.slice(0, 2).map((p) => p.provider_name).join(", ")
+      releaseLabel = `▶ Watch on ${names}`
+    } else if (diffDays <= 90) {
+      releaseLabel = "▶ Watch in Theatres"
+    } else {
+      releaseLabel = "Released"
+    }
+  }
+
+  const handleReleaseAction = async () => {
+    try {
+      setOpening(true);
+
+      if (providers.length > 0) {
+        await openStreamingProvider(providers[0].provider_name, movie.title);
+      } else if (releaseLabel.includes("Theatres")) {
+        await openNearbyTheatres();
+      }
+    } finally {
+      setTimeout(() => setOpening(false), 1500);
+    }
+  };
+
   return (
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
@@ -247,12 +287,11 @@ const MovieDetails = () => {
           </View>
         </View>
 
-        <View className='rounded-3xl overflow-hidden relative' >
-
           {/* Image and Trailer */}
+        <View className='rounded-3xl overflow-hidden relative' >
           {playTrailer && trailer ? (
             <YoutubePlayer
-              height={320}
+              height={260}
               play={playTrailer}
               videoId={trailer.key}
               onChangeState={(state: any) => {
@@ -279,9 +318,9 @@ const MovieDetails = () => {
           )}
 
           {playTrailer && trailer && (
-            <View className="absolute bottom-3 right-3">
+            <View className="absolute bottom-3 right-3 left-0 w-full">
               <TouchableOpacity
-                className="bg-black/75 border border-gray-400 px-4 py-2 rounded-lg"
+                className="bg-black/75 border border-accent px-4 py-2 rounded-lg w-full"
                 onPress={() =>
                   setState((prev) => ({
                     ...prev,
@@ -289,7 +328,7 @@ const MovieDetails = () => {
                   }))
                 }
               >
-                <Text className="text-white font-bold">Stop Trailer</Text>
+                <Text className="text-accent font-bold text-center py-1">Stop Trailer</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -352,7 +391,7 @@ const MovieDetails = () => {
                   {/* Save Movie */}
                   <TouchableOpacity
                     onPress={handleToggleSave}
-                    className="px-4 py-2 border border-white rounded-lg items-center justify-center"
+                    className={`px-4 py-2 border rounded-lg items-center justify-center ${saved ? 'border-[#FFD700]' : 'border-white'}`}
                   >
                     <Ionicons
                       name={saved ? "bookmark" : "bookmark-outline"}
@@ -386,6 +425,18 @@ const MovieDetails = () => {
           )}
         </View>
 
+        <View className="mt-3">
+          <TouchableOpacity
+            disabled={!releaseLabel || releaseLabel === "Released" || opening}
+            className="bg-accent rounded-lg px-4 py-3 items-center"
+            onPress={handleReleaseAction}
+          >
+            <Text className="text-black font-bold">
+              {opening ? "Opening..." : releaseLabel}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Overview</Text>
           <Text className='text-light-200 mt-2 leading-6'>{movie.overview || 'No overview available.'}</Text>

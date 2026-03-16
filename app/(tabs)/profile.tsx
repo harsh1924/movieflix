@@ -43,6 +43,31 @@ const Profile = () => {
 
   if (!isAuthenticated) return <LoginRequired />
 
+  function getMovieTitle(count: number) {
+    if (count === 0) return "The Screen Awaits Your First Adventure";
+    if (count <= 3) return "Curious Explorer of the Silver Screen";
+    if (count <= 7) return "Rising Star of the Movie Night Kingdom";
+    if (count <= 12) return "Devoted Guardian of the Watchlist Realm";
+    if (count <= 20) return "Passionate Seeker of Cinematic Treasures";
+    if (count <= 35) return "Fearless Voyager Across the Film Universe";
+    if (count <= 50) return "Distinguished Keeper of the Silver Screen Archives";
+    if (count <= 75) return "Legendary Collector of Unforgettable Stories";
+    if (count <= 100) return "Grand Master of the Cinematic Universe";
+    return "Eternal Legend of the Infinite Movie Multiverse";
+  }
+
+  function getNextTitleProgress(count: number) {
+    const milestones = [4, 8, 13, 21, 36, 51, 76, 101];
+
+    const next = milestones.find((m) => count < m);
+
+    if (!next) return "You have reached the highest cinematic rank.";
+
+    const remaining = next - count;
+
+    return `Save ${remaining} more movie${remaining > 1 ? "s" : ""} to unlock your next cinematic title.`;
+  }
+
   return (
     <View className='flex-1 bg-primary'>
       <Image source={images.bg} className='absolute w-full h-full z-0' resizeMode='cover' />
@@ -54,23 +79,35 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
 
+        {/* <TouchableOpacity
+          onPress={() => router.push('/chart')}
+        >
+          <Text className='text-white'>Chart</Text>
+        </TouchableOpacity> */}
+
         <View className='mt-4 items-center'>
           <View className='size-24 rounded-full bg-light-100/20 items-center justify-center'>
             <Image source={icons.person} className='size-12' tintColor='#fff' />
           </View>
 
           <Text className='text-white text-2xl font-bold mt-4'>{user?.name || 'Movie Explorer'}</Text>
-          <Text className='text-light-100 mt-1'>{user?.email || 'movie@explorer.com'}</Text>
-          <Text className='text-light-200 mt-1'>Keep your next watchlist ready</Text>
+          <Text className='text-light-200 mt-1'>{user?.email || 'movie@explorer.com'}</Text>
+          <Text className='text-accent mt-1 text-center px-6'>
+            {getMovieTitle(savedMovies.length)}
+          </Text>
+
+          <Text className='text-light-200 mt-2 text-xs text-center px-8'>
+            {getNextTitleProgress(savedMovies.length)}
+          </Text>
         </View>
 
         <View className='flex-row gap-3 mt-8'>
-          <View className='flex-1 bg-dark-200/70 border border-white/10 rounded-2xl p-4'>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/saved')} className='flex-1 bg-dark-200/70 border border-accent rounded-2xl p-4'>
             <Text className='text-light-200 text-xs uppercase'>Saved Movies</Text>
             <Text className='text-white text-2xl font-bold mt-2'>{savedMovies.length}</Text>
-          </View>
+          </TouchableOpacity>
 
-          <View className='flex-1 bg-dark-200/70 border border-white/10 rounded-2xl p-4'>
+          <View className='flex-1 bg-dark-200/70 border border-accent rounded-2xl p-4'>
             <Text className='text-light-200 text-xs uppercase'>Avg Rating</Text>
             <View className='flex-row items-center mt-2'>
               <Image source={icons.star} className='size-4 mr-1' />
@@ -104,7 +141,7 @@ const Profile = () => {
 
           <TouchableOpacity
             className='bg-white/10 border border-white/15 rounded-xl py-4'
-            onPress={() => router.push('/saved')}
+            onPress={() => router.push('/(tabs)/saved')}
             activeOpacity={0.85}
           >
             <Text className='text-white text-center font-semibold text-base'>Open Saved Collection</Text>

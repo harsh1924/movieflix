@@ -25,6 +25,8 @@ import { ActivityIndicator, FlatList, Image, ScrollView, Text, TouchableOpacity,
 const HOME_CONTENT_TYPE_KEY = "home_content_type";
 
 export default function Index() {
+  const { isAuthenticated, logout } = useAuth();
+
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [contentType, setContentType] = useState<"movie" | "tv">("movie");
@@ -32,9 +34,6 @@ export default function Index() {
 
   // ⭐ NEW state for trending filter
   const [trendType, setTrendType] = useState<"day" | "week">("day");
-
-  const { isAuthenticated, logout } = useAuth();
-
   const startPage = Math.max(1, page - 2);
   const pages = Array.from({ length: 5 }, (_, i) => startPage + i);
 
@@ -97,11 +96,10 @@ export default function Index() {
 
   const handleContentTypeChange = (nextType: "movie" | "tv") => {
     setContentType(nextType);
-    AsyncStorage.setItem(HOME_CONTENT_TYPE_KEY, nextType).catch(() => {
-      // Ignore storage write errors to keep UI responsive.
-    });
+    AsyncStorage.setItem(HOME_CONTENT_TYPE_KEY, nextType).catch(() => { });
   };
 
+  // To set movie or tv show as default based on user's last choice
   useEffect(() => {
     let isMounted = true;
 
@@ -359,7 +357,7 @@ export default function Index() {
                   </>
                 ) : (
                   <>
-                  {/* TV Shows */}
+                    {/* TV Shows */}
                     <View className="mt-10 flex-row items-center justify-between">
                       <Text className="text-lg text-white font-bold mb-3">Trending TV Shows</Text>
 
