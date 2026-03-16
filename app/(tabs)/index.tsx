@@ -17,14 +17,18 @@ import {
   fetchUpcomingMovies
 } from "@/services/api";
 import useFetch from "@/services/useFetch";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+const HOME_CONTENT_TYPE_KEY = "home_content_type";
 
 export default function Index() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [contentType, setContentType] = useState<"movie" | "tv">("movie");
+  const [isContentTypeHydrated, setIsContentTypeHydrated] = useState(false);
 
   // ⭐ NEW state for trending filter
   const [trendType, setTrendType] = useState<"day" | "week">("day");
@@ -91,6 +95,37 @@ export default function Index() {
     error: topRatedTVError,
   } = useFetch(() => fetchTopRatedTV(), []);
 
+  const handleContentTypeChange = (nextType: "movie" | "tv") => {
+    setContentType(nextType);
+    AsyncStorage.setItem(HOME_CONTENT_TYPE_KEY, nextType).catch(() => {
+      // Ignore storage write errors to keep UI responsive.
+    });
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSavedContentType = async () => {
+      try {
+        const savedContentType = await AsyncStorage.getItem(HOME_CONTENT_TYPE_KEY);
+
+        if (isMounted && (savedContentType === "movie" || savedContentType === "tv")) {
+          setContentType(savedContentType);
+        }
+      } finally {
+        if (isMounted) {
+          setIsContentTypeHydrated(true);
+        }
+      }
+    };
+
+    loadSavedContentType();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     setPage(1);
   }, [contentType]);
@@ -122,7 +157,9 @@ export default function Index() {
     topRatedTVLoading;
 
   const hasSectionLoadError = contentType === "movie" ? hasMovieLoadError : hasTVLoadError;
-  const isLoadingMainSections = contentType === "movie" ? isLoadingMovieSections : isLoadingTVSections;
+  const isLoadingMainSections =
+    !isContentTypeHydrated ||
+    (contentType === "movie" ? isLoadingMovieSections : isLoadingTVSections);
 
   return (
     <View className="flex-1 bg-primary">
@@ -175,7 +212,7 @@ export default function Index() {
                 <View className="mt-6 flex-row bg-dark-200 rounded-xl p-1 self-start">
                   <TouchableOpacity
                     className={`px-5 py-2 rounded-lg ${contentType === "movie" ? "bg-accent" : "bg-transparent"}`}
-                    onPress={() => setContentType("movie")}
+                    onPress={() => handleContentTypeChange("movie")}
                   >
                     <Text className={`font-semibold ${contentType === "movie" ? "text-black" : "text-white"}`}>
                       Movies
@@ -184,7 +221,7 @@ export default function Index() {
 
                   <TouchableOpacity
                     className={`px-5 py-2 rounded-lg ${contentType === "tv" ? "bg-accent" : "bg-transparent"}`}
-                    onPress={() => setContentType("tv")}
+                    onPress={() => handleContentTypeChange("tv")}
                   >
                     <Text className={`font-semibold ${contentType === "tv" ? "text-black" : "text-white"}`}>
                       TV Shows

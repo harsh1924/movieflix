@@ -3,8 +3,11 @@ import LoginRequired from '@/components/LoginRequired'
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
 import { useAuth } from '@/context/AuthContext'
+import { useReminder } from "@/hooks/useReminder"
 import { fetchFullTVDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
+import { Ionicons } from '@expo/vector-icons'
+import DateTimePicker from "@react-native-community/datetimepicker"
 import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -15,6 +18,9 @@ const TvDetails = () => {
   const { isAuthenticated, user } = useAuth();
   const initial = user!.name.charAt(0).toUpperCase() || ""
   const { id } = useLocalSearchParams<{ id: string }>()
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
 
   const [state, setState] = useState<{
     loading: boolean
@@ -54,6 +60,11 @@ const TvDetails = () => {
     playTrailer,
     selectedBackdrop,
   } = state
+
+  const { reminderSet, addReminder, removeReminder } = useReminder({
+    id: tv?.id,
+    title: tv?.name
+  });
 
   useEffect(() => {
     const loadTV = async () => {
@@ -222,21 +233,43 @@ const TvDetails = () => {
                 <View className='flex-row mt-3 gap-2'>
                   {trailer && (
                     <TouchableOpacity
-                      className='bg-accent px-4 py-2 rounded-lg'
+                      className='bg-accent px-4 py-3 rounded-lg'
                       onPress={() => setState((prev) => ({ ...prev, playTrailer: true }))}
                     >
                       <Text className='text-black font-bold'>Play Trailer</Text>
                     </TouchableOpacity>
                   )}
 
+                  {/* Save Movie */}
                   <TouchableOpacity
-                    className='bg-black/70 border border-gray-500 px-4 py-2 rounded-lg'
                     onPress={handleToggleSave}
-                    activeOpacity={0.85}
+                    className={`px-4 py-2 border rounded-lg items-center justify-center ${saved ? 'border-[#FFD700]' : 'border-white'}`}
                   >
-                    <Text className='text-white font-bold'>
-                      {saved ? 'In My List' : '+ My List'}
-                    </Text>
+                    <Ionicons
+                      name={saved ? "bookmark" : "bookmark-outline"}
+                      size={20}
+                      color={saved ? "#FFD700" : "#fff"}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Reminder */}
+                  <TouchableOpacity
+                    className={`rounded-lg px-4 py-2 border ${reminderSet ? "border-green-500" : "border-white"
+                      } items-center justify-center`}
+                    onPress={() => {
+                      if (reminderSet) {
+                        removeReminder();
+                      } else {
+                        setPickerMode("date");
+                        setShowPicker(true);
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={reminderSet ? "notifications" : "notifications-outline"}
+                      size={20}
+                      color={reminderSet ? "#22c55e" : "#fff"}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -472,7 +505,7 @@ const TvDetails = () => {
           </View>
         )}
 
-{/* Recommendations: related TV titles rendered as a horizontal section */}
+        {/* Recommendations: related TV titles rendered as a horizontal section */}
         {relatedShows.length > 0 && (
           <View className='mt-6'>
             <HorizontalMovieSection
@@ -484,6 +517,38 @@ const TvDetails = () => {
           </View>
         )}
 
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode={pickerMode}
+            display="default"
+            onChange={(event, selectedDate) => {
+              if (event.type === "dismissed") {
+                setShowPicker(false);
+                return;
+              }
+
+              if (!selectedDate) return;
+
+              if (pickerMode === "date") {
+                setDate(selectedDate);
+                setPickerMode("time");
+                setShowPicker(true);
+              } else {
+                const finalDate = new Date(date);
+
+                finalDate.setHours(selectedDate.getHours());
+                finalDate.setMinutes(selectedDate.getMinutes());
+                finalDate.setSeconds(0);
+
+                setDate(finalDate);
+                setShowPicker(false);
+
+                addReminder(finalDate);
+              }
+            }}
+          />
+        )}
       </ScrollView>
     </View>
   )

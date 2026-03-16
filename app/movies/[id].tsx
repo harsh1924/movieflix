@@ -1,21 +1,25 @@
-import HorizontalMovieSection from '@/components/HorizontalMovieSection'
-import LoginRequired from '@/components/LoginRequired'
-import { icons } from '@/constants/icons'
-import { images } from '@/constants/images'
-import { useAuth } from '@/context/AuthContext'
-import { fetchCollection, fetchFullMovieDetails, fetchFullTVDetails } from '@/services/api'
-import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
-import { LinearGradient } from 'expo-linear-gradient'
-import { router, useLocalSearchParams } from 'expo-router'
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import YoutubePlayer from "react-native-youtube-iframe"
+import HorizontalMovieSection from '@/components/HorizontalMovieSection';
+import LoginRequired from '@/components/LoginRequired';
+import { icons } from '@/constants/icons';
+import { images } from '@/constants/images';
+import { useAuth } from '@/context/AuthContext';
+import { useReminder } from "@/hooks/useReminder";
+import { fetchCollection, fetchFullMovieDetails, fetchFullTVDetails } from '@/services/api';
+import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import YoutubePlayer from "react-native-youtube-iframe";
 
 const MovieDetails = () => {
   const { isAuthenticated, user } = useAuth();
   const initial = user!.name.charAt(0).toUpperCase() || "";
-
   const { id } = useLocalSearchParams<{ id: string }>()
+  const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
 
   const [state, setState] = useState<{
     saved: boolean
@@ -160,6 +164,16 @@ const MovieDetails = () => {
 
     loadMovie()
   }, [id])
+
+  const { reminderSet, addReminder, removeReminder } = useReminder({
+    id: movie?.id,
+    title: movie?.title,
+    runtime: movie?.runtime
+  });
+
+  const [date, setDate] = useState(
+    movie?.release_date ? new Date(movie.release_date) : new Date()
+  )
 
   const handleToggleSave = async () => {
     if (!movie) return
@@ -317,9 +331,11 @@ const MovieDetails = () => {
                 </View>
 
                 <View className="flex-row mt-3 gap-2">
+
+                  {/* Trailer Play/Stop */}
                   {trailer && (
                     <TouchableOpacity
-                      className="bg-accent px-4 py-2 rounded-lg"
+                      className="bg-accent rounded-lg px-4 py-3"
                       onPress={() =>
                         setState((prev) => ({
                           ...prev,
@@ -333,14 +349,36 @@ const MovieDetails = () => {
                     </TouchableOpacity>
                   )}
 
+                  {/* Save Movie */}
                   <TouchableOpacity
-                    className='bg-black/70 border border-gray-500 px-4 py-2 rounded-lg'
                     onPress={handleToggleSave}
-                    activeOpacity={0.85}
+                    className="px-4 py-2 border border-white rounded-lg items-center justify-center"
                   >
-                    <Text className='text-white font-bold'>
-                      {saved ? 'In My List' : '+ My List'}
-                    </Text>
+                    <Ionicons
+                      name={saved ? "bookmark" : "bookmark-outline"}
+                      size={20}
+                      color={saved ? "#FFD700" : "#fff"}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Reminder */}
+                  <TouchableOpacity
+                    className={`rounded-lg px-4 py-2 border ${reminderSet ? "border-green-500" : "border-white"} items-center justify-center
+                      }`}
+                    onPress={() => {
+                      if (reminderSet) {
+                        removeReminder();
+                      } else {
+                        setPickerMode("date");
+                        setShowPicker(true);
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={reminderSet ? "notifications" : "notifications-outline"}
+                      size={20}
+                      color={reminderSet ? "#22c55e" : "#fff"}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -635,6 +673,38 @@ const MovieDetails = () => {
           <View className="mt-5">
             <HorizontalMovieSection title="Related Movies" movies={relatedMovies} sectionKey="related" />
           </View>
+        )}
+
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode={pickerMode}
+            display="default"
+            onChange={(event, selectedDate) => {
+              if (event.type === "dismissed") {
+                setShowPicker(false);
+                return;
+              }
+
+              if (!selectedDate) return;
+
+              if (pickerMode === "date") {
+                setDate(selectedDate);
+                setPickerMode("time");
+                setShowPicker(true);
+              } else {
+                const finalDate = new Date(date);
+
+                finalDate.setHours(selectedDate.getHours());
+                finalDate.setMinutes(selectedDate.getMinutes());
+
+                setDate(finalDate);
+                setShowPicker(false);
+
+                addReminder(finalDate);
+              }
+            }}
+          />
         )}
 
       </ScrollView>
