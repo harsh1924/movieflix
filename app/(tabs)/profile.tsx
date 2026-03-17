@@ -10,6 +10,7 @@ import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 const Profile = () => {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
+  const initial = user!.name.charAt(0).toUpperCase() || "";
 
   const [savedMovies, setSavedMovies] = useState<SavedMovie[]>([])
 
@@ -87,7 +88,7 @@ const Profile = () => {
 
         <View className='mt-4 items-center'>
           <View className='size-24 rounded-full bg-light-100/20 items-center justify-center'>
-            <Image source={icons.person} className='size-12' tintColor='#fff' />
+            <Text className='text-white text-6xl font-bold'>{initial}</Text>
           </View>
 
           <Text className='text-white text-2xl font-bold mt-4'>{user?.name || 'Movie Explorer'}</Text>

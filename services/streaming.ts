@@ -18,7 +18,10 @@ const providerSearchUrls: Record<string, string> = {
     "ZEE5": "https://www.zee5.com/search?q=",
     "JioCinema": "https://www.jiocinema.com/search?q=",
     "Hotstar": "https://www.hotstar.com/in/search?q=",
-    "Disney+ Hotstar": "https://www.hotstar.com/in/search?q="
+    "Disney+ Hotstar": "https://www.hotstar.com/in/search?q=",
+    "Warner Bros": "https://play.max.com/search?q=",
+    "The WB": "https://play.max.com/search?q=",
+    "Warner Bros.": "https://play.max.com/search?q=",
 };
 
 export const openStreamingProvider = async (

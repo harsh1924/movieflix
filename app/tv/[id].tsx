@@ -3,6 +3,7 @@ import LoginRequired from '@/components/LoginRequired'
 import { icons } from '@/constants/icons'
 import { images } from '@/constants/images'
 import { useAuth } from '@/context/AuthContext'
+import { useNotification } from '@/hooks/useNotification'
 import { useReminder } from "@/hooks/useReminder"
 import { fetchFullTVDetails } from '@/services/api'
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies'
@@ -13,10 +14,12 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import Toast from 'react-native-toast-message'
 import YoutubePlayer from 'react-native-youtube-iframe'
 
 const TvDetails = () => {
   const { isAuthenticated, user } = useAuth();
+  const { scheduleNotification, sendInstantNotification } = useNotification();
   const initial = user!.name.charAt(0).toUpperCase() || ""
   const { id } = useLocalSearchParams<{ id: string }>()
   const [date, setDate] = useState(new Date());
@@ -34,7 +37,8 @@ const TvDetails = () => {
     galleryImages: any[]
     trailer: any
     playTrailer: boolean
-    selectedBackdrop: string | null
+    selectedBackdrop: string | null,
+    clips: any[]
   }>({
     loading: true,
     error: null,
@@ -47,6 +51,7 @@ const TvDetails = () => {
     trailer: null,
     playTrailer: false,
     selectedBackdrop: null,
+    clips: [],
   })
 
   const {
@@ -60,6 +65,7 @@ const TvDetails = () => {
     trailer,
     playTrailer,
     selectedBackdrop,
+    clips,
   } = state
 
   const { reminderSet, addReminder, removeReminder } = useReminder({
@@ -82,6 +88,11 @@ const TvDetails = () => {
         const videos = fullDetails?.videos?.results || []
         const trailerData = videos.find((video: any) => video.type === 'Trailer' && video.site === 'YouTube') || null
         const exists = await isMovieSaved(fullDetails.id)
+        const clipVideos = videos.filter(
+          (video: any) =>
+            (video.type === "Clip" || video.type === "Teaser") &&
+            video.site === "YouTube"
+        );
 
         setState((prev) => ({
           ...prev,
@@ -92,6 +103,7 @@ const TvDetails = () => {
           relatedShows: fullDetails?.recommendations?.results?.slice(0, 10) || [],
           galleryImages: fullDetails?.images?.backdrops?.slice(0, 15) || [],
           trailer: trailerData,
+          clips: clipVideos,
         }))
       } catch (err) {
         setState((prev) => ({
@@ -121,9 +133,11 @@ const TvDetails = () => {
     if (saved) {
       await removeSavedMovie(tv.id)
       setState((prev) => ({ ...prev, saved: false }))
+      sendInstantNotification(tv.name, "removed", "TV Show");
     } else {
       await saveMovie(tvCardData)
       setState((prev) => ({ ...prev, saved: true }))
+      sendInstantNotification(tv.name, "saved", "TV Show");
     }
   }
 
@@ -152,7 +166,7 @@ const TvDetails = () => {
   let watchLabel = "";
 
   if (networks.length > 0) {
-    const names = networks.slice(0, 2).map((n: any) => n.name).join(", ");
+    const names = networks.slice(0, 1).map((n: any) => n.name).join(", ");
     watchLabel = `▶ Watch on ${names}`;
   }
 
@@ -428,6 +442,31 @@ const TvDetails = () => {
           </View>
         )}
 
+        {/* More Clips */}
+        {clips.length > 0 && (
+          <View className="mt-8">
+            <Text className="text-white text-lg font-semibold mb-3">
+              More Clips
+            </Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {clips.map((clip) => (
+                <View key={clip.id} className="mr-4 w-[250px]">
+                  <YoutubePlayer
+                    height={140}
+                    play={false}
+                    videoId={clip.key}
+                  />
+
+                  <Text className="text-light-200 mt-2 text-sm">
+                    {clip.name}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Cast strip: actor cards with profile, role, and navigation to actor details */}
         {cast.length > 0 && (
           <View className='mt-8'>
@@ -574,14 +613,31 @@ const TvDetails = () => {
               } else {
                 const finalDate = new Date(date);
 
+                finalDate.setHours(
+                  selectedDate.getHours(),
+                  selectedDate.getMinutes(),
+                  0,
+                  0
+                );
+
+                const now = new Date();
+
+                if (finalDate.getTime() <= now.getTime()) {
+                  Toast.show({
+                    type: "error",
+                    text1: "Please select a future date and time for the reminder.",
+                  });
+                  return;
+                }
+
                 finalDate.setHours(selectedDate.getHours());
                 finalDate.setMinutes(selectedDate.getMinutes());
-                finalDate.setSeconds(0);
 
                 setDate(finalDate);
                 setShowPicker(false);
 
                 addReminder(finalDate);
+                scheduleNotification(tv.name, finalDate, "TV Show");
               }
             }}
           />

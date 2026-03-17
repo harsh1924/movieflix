@@ -18,6 +18,13 @@
         "backgroundImage": "./assets/images/logo.png",
         "monochromeImage": "./assets/images/logo.png"
       },
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       "predictiveBackGestureEnabled": false,
       "versionCode": 2
     },
@@ -43,6 +50,18 @@
         "expo-calendar",
         {
           "calendarPermissions": "The app needs access to your calendar."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationPermissions": "The app needs access to your location to show nearby theaters."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "notificationPermissions": "The app needs permission to send you notifications."
         }
       ]
     ],

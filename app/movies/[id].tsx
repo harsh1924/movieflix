@@ -3,6 +3,7 @@ import LoginRequired from '@/components/LoginRequired';
 import { icons } from '@/constants/icons';
 import { images } from '@/constants/images';
 import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/hooks/useNotification';
 import { useReminder } from "@/hooks/useReminder";
 import { fetchCollection, fetchFullMovieDetails, fetchFullTVDetails } from '@/services/api';
 import { isMovieSaved, removeSavedMovie, saveMovie } from '@/services/savedMovies';
@@ -13,12 +14,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import YoutubePlayer from "react-native-youtube-iframe";
 
 const MovieDetails = () => {
   const { isAuthenticated, user } = useAuth();
   const initial = user!.name.charAt(0).toUpperCase() || "";
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { scheduleNotification, sendInstantNotification } = useNotification();
+
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [opening, setOpening] = useState(false);
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
@@ -197,13 +201,16 @@ const MovieDetails = () => {
         ...prev,
         saved: false,
       }))
+      sendInstantNotification(movie.title, "removed", "Movie");
     } else {
       await saveMovie(movieCardData)
       setState((prev) => ({
         ...prev,
         saved: true,
       }))
+      sendInstantNotification(movie.title, "saved", "Movie");
     }
+
   }
 
   if (loading) {
@@ -287,7 +294,7 @@ const MovieDetails = () => {
           </View>
         </View>
 
-          {/* Image and Trailer */}
+        {/* Image and Trailer */}
         <View className='rounded-3xl overflow-hidden relative' >
           {playTrailer && trailer ? (
             <YoutubePlayer
@@ -425,6 +432,7 @@ const MovieDetails = () => {
           )}
         </View>
 
+        {/* Watch Status */}
         <View className="mt-3">
           <TouchableOpacity
             disabled={!releaseLabel || releaseLabel === "Released" || opening}
@@ -436,7 +444,7 @@ const MovieDetails = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         <View className='mt-6'>
           <Text className='text-white text-lg font-semibold'>Overview</Text>
           <Text className='text-light-200 mt-2 leading-6'>{movie.overview || 'No overview available.'}</Text>
@@ -746,6 +754,23 @@ const MovieDetails = () => {
               } else {
                 const finalDate = new Date(date);
 
+                finalDate.setHours(
+                  selectedDate.getHours(),
+                  selectedDate.getMinutes(),
+                  0,
+                  0
+                );
+
+                const now = new Date();
+
+                if (finalDate.getTime() <= now.getTime()) {
+                  Toast.show({
+                    type: "error",
+                    text1: "Please select a future date and time for the reminder.",
+                  });
+                  return;
+                }
+
                 finalDate.setHours(selectedDate.getHours());
                 finalDate.setMinutes(selectedDate.getMinutes());
 
@@ -753,6 +778,7 @@ const MovieDetails = () => {
                 setShowPicker(false);
 
                 addReminder(finalDate);
+                scheduleNotification(movie.title, finalDate, "Movie");
               }
             }}
           />

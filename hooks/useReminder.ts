@@ -61,7 +61,7 @@ export const useReminder = ({ id, title, runtime }: ReminderProps) => {
                 title: `Watch ${title}`,
                 startDate: date,
                 endDate: new Date(date.getTime() + (runtime || 120) * 60000), // Default to 2 hours if runtime not provided
-                timeZone: "GMT",
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             });
             await AsyncStorage.setItem(`reminder-${id}`, eventId);
             setReminderSet(true);
