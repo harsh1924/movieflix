@@ -199,3 +199,5 @@ Main saved-movie functions:
 - removeSavedMovie
 - toggleSavedMovie
 ```
+
+Github account setup complete
